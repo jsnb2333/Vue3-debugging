@@ -1,53 +1,65 @@
-# vuejs/core [![npm](https://img.shields.io/npm/v/vue.svg)](https://www.npmjs.com/package/vue) [![build status](https://github.com/vuejs/core/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vuejs/core/actions/workflows/ci.yml)
+# vuejs/core 源码调试 [![npm](https://img.shields.io/npm/v/vue.svg)](https://www.npmjs.com/package/vue) [![build status](https://github.com/vuejs/core/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vuejs/core/actions/workflows/ci.yml)
 
-## Getting Started
+## 前言
+vue的开发者模式下的源码是被压缩的，很难理解运行逻辑，而我们需要未压缩的源码调试。
 
-Please follow the documentation at [vuejs.org](https://vuejs.org/)!
+网上大部分方法都是不支持工程化项目中调试的，这样SFC文件就没有对应的调试方案了。但实际上可以使用工程化项目调试。
 
-## Sponsors
+## 思路
 
-Vue.js is an MIT-licensed open source project with its ongoing development made possible entirely by the support of these awesome [backers](https://github.com/vuejs/core/blob/main/BACKERS.md). If you'd like to join them, please consider [ sponsoring Vue's development](https://vuejs.org/sponsor/).
+让前端工程化项目可以实现源码调试，主要思路是从vue在npm包改为我们构建的vue包。
+但是通过npm link的方式修改package.json，结果是失败的。个人猜测可能是我们引用的vue其实是vite依赖的依赖。对于依赖的依赖可以使用yarn去解决，但是也失败了，原因未知。
 
-<p align="center">
-  <h3 align="center">Special Sponsor</h3>
-</p>
+使用直接替换node_modules内的vue源码，结果也失败了，个人猜测可能是vue有个可以被静态解析的概念，其源码被vite缓存了。
 
-<p align="center">
-  <a target="_blank" href="https://github.com/appwrite/appwrite">
-  <img alt="special sponsor appwrite" src="https://sponsors.vuejs.org/images/appwrite.svg" width="300">
-  </a>
-</p>
+博客中利用了monorepo优先安装本地的性质，结果是成功的。
+## 开始
+**从Vue Github网上下载一份源码。并且用pnpm install安装依赖。**
 
-<p align="center">
-  <a target="_blank" href="https://vuejs.org/sponsor/#current-sponsors">
-    <img alt="sponsors" src="https://sponsors.vuejs.org/sponsors.svg?v3">
-  </a>
-</p>
+**修改package.json文件：**
+```
+"dev": "node scripts/dev.js --sourcemap -t", 
 
-## Questions
+"build": "node scripts/build.js --sourcemap -t",
+```
 
-For questions and support please use [the official forum](https://forum.vuejs.org) or [community chat](https://chat.vuejs.org/). The issue list of this repo is **exclusively** for bug reports and feature requests.
+--sourcemap 是输出 sourcemap，方便调试
 
-## Issues
+-t 是输出 typescript 类型声明文件，也是方便调试
 
-Please make sure to respect issue requirements and use [the new issue helper](https://new-issue.vuejs.org/) when opening an issue. Issues not conforming to the guidelines may be closed immediately.
+由于默认的 vue 打包构建，是不会生成 sourcemap 的，因此我们需要加上 --sourcemap，生成 sourcemap，以方便后面调试时，chrome 能够根据 sourcemap，将构建压缩过的代码，还原成源码。
 
-## Stay In Touch
 
-- [Twitter](https://twitter.com/vuejs)
-- [Blog](https://blog.vuejs.org/)
-- [Job Board](https://vuejobs.com/?ref=vuejs)
+**（这里可以修改源码后）打包构建：**
 
-## Contribution
+pnpm build 或 pnpm dev
 
-Please make sure to read the [Contributing Guide](https://github.com/vuejs/core/blob/main/.github/contributing.md) before making a pull request. If you have a Vue-related project/component/tool, add it with a pull request to [this curated list](https://github.com/vuejs/awesome-vue)!
+dev 脚本，因为它可以 watch 监听修改，并自动重新构建。
 
-Thank you to all the people who already contributed to Vue!
+构建 vue 源码，比如构建产物核心产物在packages\vue\dist\*。这里构建的结果就是npm网上下载到的内容。
 
-<a href="https://github.com/vuejs/core/graphs/contributors"><img src="https://opencollective.com/vuejs/contributors.svg?width=890" /></a>
+其中packages\vue\dist\vue.global.js文件可以直接被html文件引用。但使用方式也是html中的JS脚本调试。
 
-## License
+**可以先使用vite构建前端工程化项目。**
 
-[MIT](https://opensource.org/licenses/MIT)
+pnpm create vite
+因为vue源码就是pnpm monorepo，所以不需要重新创建，直接将项目放入vue源码跟目录下。
 
-Copyright (c) 2013-present, Yuxi (Evan) You
+pnpm-workspace.yaml文件加入“- 'vue-project'”：
+```
+packages:
+  - 'packages/*'
+  - 'vue-project'
+```
+项目目录下面使用pnpm install安装项目依赖。
+
+**启动项目**
+
+pnpm dev 
+
+这时就可以在浏览器控制台中看到vue未被压缩后的源码。
+注意：不支持热更新，我们每次修改源码后都需要重新构建，和重新启动项目。
+
+## 参考
+https://zhuanlan.zhihu.com/p/460681229 参考博客
+
