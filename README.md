@@ -13,7 +13,18 @@ vue的开发者模式下的源码是被压缩的，很难理解运行逻辑，�
 使用直接替换node_modules内的vue源码，结果也失败了。个人猜测可能是vue有个可以被静态解析的概念，其源码被vite缓存了。
 
 博客中利用了monorepo优先安装本地的性质，结果是成功的。
-## 开始
+
+## 使用
+当前仓库下的代码是已经构建成功的。
+```
+pnpm install
+pnpm build 或 pnpm dev
+cd vue-project
+pnpm install
+pnpm dev
+```
+
+## 当前仓库的构建
 **从Vue Github网上下载一份源码。并且用pnpm install安装依赖。**
 
 **修改package.json文件：**
@@ -63,4 +74,5 @@ pnpm dev
 
 ## 参考
 https://zhuanlan.zhihu.com/p/460681229 参考博客
+
 
